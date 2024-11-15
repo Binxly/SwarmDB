@@ -1,0 +1,11 @@
+langchain
+langchain-chroma
+langchain-openai
+langchain-community
+pypdf
+sentence-transformers==3.3.0
+
+
+# Remove these wget/mv commands from requirements.txt as they are shell commands:
+# !wget https://github.com/lerocha/chinook-database/raw/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite
+# !mv Chinook_Sqlite.sqlite Chinook.db
