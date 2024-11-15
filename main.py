@@ -19,6 +19,13 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 # imported from github repo
 from swarm import Agent, Swarm
 
+# Add these imports at the top
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
+from rich import print as rprint
+from rich.spinner import Spinner
+
 load_dotenv()
 
 # LLM selection
@@ -108,7 +115,7 @@ def retrieve_and_generate(question):
     )
     return rag_chain.invoke(question)
 
-
+# TODO: Add caching for the database queries, look at LangChain docs for that and prompt template libraries.
 def sql_response_gen(question):
     try:
         db = SQLDatabase.from_uri("sqlite:///Chinook.db")
@@ -117,66 +124,85 @@ def sql_response_gen(question):
 
     execute_query = QuerySQLDataBaseTool(db=db)
 
-    sql_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                "You are a SQLite expert. Given an input question, create a "
-                "syntactically correct SQL query to run. Unless otherwise "
-                "specified.\n\nHere is the relevant table info: {table_info}"
-                "\n\n Use max {top_k} rows",
-            ),
-            ("human", "{input}"),
-        ]
-    )
+    # Updated prompt template to include top_k
+    sql_prompt = ChatPromptTemplate.from_messages([
+        (
+            "system",
+            "You are a SQLite expert. Create only the SQL query without explanation. "
+            "The query must be simple and direct, avoiding complex joins unless necessary. "
+            "Table info: {table_info}\n"
+            "Return only the top {top_k} results if the query returns multiple rows."
+        ),
+        ("human", "{input}"),
+    ])
 
-    write_query = create_sql_query_chain(llm, db, sql_prompt)
-    answer_prompt = PromptTemplate.from_template(
-        """Given the following user question, corresponding SQL query, and SQL result, answer the user question.
-    Question: {question}
-    SQL Query: {query}
-    SQL Result: {result}
-    Answer: """
+    # Add top_k parameter when creating the chain
+    write_query = create_sql_query_chain(
+        llm, 
+        db, 
+        sql_prompt,
+        k=5  # This sets the default value for top_k
     )
+    
+    try:
+        # Get the query
+        query = write_query.invoke({"question": question})
+        clean_query = clean_sql_query(query)
+        
+        # Execute the query
+        result = execute_query.invoke(clean_query)
+        
+        # Format the response with the actual query for transparency
+        response = f"""Query executed: 
+```sql
+{clean_query}
+```
 
-    chain = (
-        RunnablePassthrough.assign(
-            query=write_query | RunnableLambda(clean_sql_query)
-        ).assign(result=itemgetter("query") | execute_query)
-        | answer_prompt
-        | llm
-        | StrOutputParser()
-    )
-    return chain.invoke({"question": question})
+Result: {result}"""
+        
+        return response
+        
+    except Exception as e:
+        return f"Error executing query: {str(e)}"
 
+
+def handle_non_sql_query(question):
+    print("This appears to be a non-SQL query. Redirecting to coordinator...")
+    return coordinator_agent
+
+def handle_non_rag_query(question):
+    print("This appears to be unrelated to LLM research. Redirecting to coordinator...")
+    return coordinator_agent
 
 def transfer_to_sql():
     print("Handing off to SQL Agent")
     return sql_agent
 
-
 def transfer_to_rag():
     print("Handing off to RAG Agent")
     return rag_agent
-
 
 sql_agent = Agent(
     name="SQL Agent",
     instructions=(
         "You handle database queries for the Chinook SQLite database. "
         "This database contains tables related to a digital media store, including "
-        "artists, albums, tracks, customers, and sales information."
+        "artists, albums, tracks, customers, and sales information. "
+        "If a question is not related to the Chinook database, use the handle_non_sql_query function "
+        "to redirect to the coordinator."
     ),
-    functions=[sql_response_gen],
+    functions=[sql_response_gen, handle_non_sql_query],
 )
 
 rag_agent = Agent(
     name="RAG Agent",
     instructions=(
         "You retrieve and analyze information from academic papers about "
-        "transformer architectures and LLM research using the available knowledge base."
+        "transformer architectures and LLM research using the available knowledge base. "
+        "If a question is not related to transformer architectures, LLMs, or the research papers "
+        "in the knowledge base, use the handle_non_rag_query function to redirect to the coordinator."
     ),
-    functions=[retrieve_and_generate],
+    functions=[retrieve_and_generate, handle_non_rag_query],
 )
 
 coordinator_agent = Agent(
@@ -212,27 +238,91 @@ except Exception as e:
     raise
 
 
+def pretty_print_messages(messages):
+    console = Console()
+    
+    # Group messages by conversation turn
+    current_turn = []
+    
+    for message in messages:
+        if message.get("content") is None:
+            continue
+            
+        sender = message.get("sender", message.get("role", "unknown"))
+        content = message["content"]
+        
+        # Start new turn on user message
+        if sender == "user":
+            if current_turn:
+                # Print previous turn with divider
+                console.print("─" * 80)
+                for turn_message in current_turn:
+                    print_message(turn_message, console)
+                current_turn = []
+            
+            # Add user message to new turn
+            current_turn.append({"sender": sender, "content": content})
+        else:
+            current_turn.append({"sender": sender, "content": content})
+    
+    # Print final turn
+    if current_turn:
+        console.print("─" * 80)
+        for turn_message in current_turn:
+            print_message(turn_message, console)
+
+def print_message(message, console):
+    sender = message["sender"]
+    content = message["content"]
+    
+    if sender == "user":
+        style = "bold blue"
+        title = "📝 User"
+    elif sender == "Coordinator":
+        style = "bold yellow"
+        title = "🎯 Coordinator"
+    elif sender == "SQL Agent":
+        style = "bold green"
+        title = "💾 SQL Agent"
+    elif sender == "RAG Agent":
+        style = "bold magenta"
+        title = "📚 RAG Agent"
+    else:
+        style = "bold white"
+        title = sender
+        
+    panel = Panel(
+        Markdown(content) if sender != "user" else content,
+        title=title,
+        style=style,
+        border_style=style,
+        padding=(1, 2)
+    )
+    console.print(panel)
+
 def main():
     client = Swarm()
+    messages = []
+    agent = coordinator_agent
 
-    print("Welcome to the Swarm CLI!")
-    print("Type 'quit' to exit")
+    console = Console()
+    console.print("[bold magenta]Welcome to the Swarm CLI![/bold magenta]")
+    console.print("[bold]Type 'quit' to exit[/bold]")
 
     while True:
-        user_input = input("\nEnter your question: ").strip()
+        user_input = console.input("\n[bold blue]Enter your question:[/bold blue] ").strip()
 
         if user_input.lower() == "quit":
             break
 
-        messages = [{"role": "user", "content": user_input}]
-        response = client.run(agent=coordinator_agent, messages=messages)
-
-        if isinstance(response, Agent):
-            selected_agent = response
-            result = selected_agent.functions[0](user_input)
-            print(f"Response: {result}")
-        else:
-            print(f"Response: {response.messages[-1]['content']}")
+        messages.append({"role": "user", "content": user_input})
+        
+        with console.status("[bold green]Processing query...", spinner="dots"):
+            response = client.run(agent=agent, messages=messages)
+            messages = response.messages
+            agent = response.agent
+        
+        pretty_print_messages(messages)
 
 
 if __name__ == "__main__":
@@ -261,4 +351,4 @@ if __name__ == "__main__":
 # - Caching for frequently accessed documents.
 # - Adjusting batches and chunks based on the size of the documents, 
 # trade-off of accuracy and the LLM model.
-# - Optimize vector store queries.
+# - Optimize vector store queries, looking at LangChain docs.
