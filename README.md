@@ -1,6 +1,6 @@
 # SwarmDB Testing Platform
 
-A lightweight platform for prototyping and testing swarm-based routing between specialized agents. Built with Python and the OpenAI Swarm library.
+A lightweight platform for prototyping and testing swarm-based routing between specialized agents and document / vector stores. Built with Python, LangChain, and the OpenAI Swarm library.
 
 ## What's This?
 
