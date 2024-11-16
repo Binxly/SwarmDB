@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
@@ -159,14 +159,3 @@ class SwarmCLI:
         
         # Default fallback
         return self.coordinator
-
-    def _display_response(self, agent: BaseSwarmAgent, response: str) -> None:
-        """Display the agent's response in a formatted panel."""
-        # Get the correct agent name for the panel title
-        agent_name = agent.name if hasattr(agent, 'name') else "Agent"
-        
-        self.console.print(Panel(
-            Markdown(response),
-            title=f"📚 {agent_name}",
-            border_style="blue"
-        ))

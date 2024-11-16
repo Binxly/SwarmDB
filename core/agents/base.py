@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Callable, Optional, Any
+from typing import List, Callable, Any
 from swarm import Agent
 
 class BaseSwarmAgent(ABC):

@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.documents import Document
@@ -19,12 +19,11 @@ class VectorStoreHandler:
             model_name=settings.embedding_model
         )
         self.loader = DocumentLoader()
-        self.vectorstore: Optional[Chroma] = None
+        self.vectorstore = None
         self.llm = ChatOpenAI(model=settings.model_name)
         self._retriever = None
         
     def initialize_vectorstore(self) -> None:
-        """Initialize or load the vector store."""
         try:
             documents = self.loader.load_documents()
             if not documents:
@@ -52,13 +51,11 @@ class VectorStoreHandler:
 
     @property
     def retriever(self):
-        """Get the retriever, initializing if necessary."""
         if self._retriever is None:
             self.initialize_vectorstore()
         return self._retriever
 
     def _docs_to_string(self, docs: List[Document]) -> str:
-        """Convert a list of documents to a single string."""
         return "\n\n".join(doc.page_content for doc in docs)
 
     def retrieve_and_generate(self, question: str) -> tuple[str, int, List[str]]:
@@ -66,18 +63,13 @@ class VectorStoreHandler:
             if self.retriever is None:
                 return "Error: Document retrieval system is not properly initialized.", 0, []
             
-            # Get documents
             docs = self.retriever.invoke(question)
             num_docs = len(docs)
             
-            # Improve snippet formatting
             snippets = []
             for doc in docs:
-                # Clean and format the content
                 content = doc.page_content.replace('\n', ' ').strip()
-                # Take first 200 chars and add ellipsis if needed
                 preview = content[:200] + ('...' if len(content) > 200 else '')
-                # Add to snippets list with better structure
                 snippets.append(preview)
             
             template = """Based on the provided context, please provide a clear and well-formatted answer to the question.
@@ -104,7 +96,6 @@ class VectorStoreHandler:
             
             answer = rag_chain.invoke(question)
             
-            # Format the final response with cleaner section breaks
             formatted_answer = f"""
 {answer}
 
@@ -112,7 +103,6 @@ class VectorStoreHandler:
 ### Source Documents ({num_docs}):
 
 """
-            # Add numbered snippets with cleaner formatting
             for i, snippet in enumerate(snippets, 1):
                 formatted_answer += f"{i}. {snippet}\n\n"
                 
