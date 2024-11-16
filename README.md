@@ -4,7 +4,7 @@ A lightweight platform for prototyping and testing swarm-based routing between s
 
 ## What's This?
 
-This is my sandbox for experimenting with agent routing patterns. It uses a coordinator agent to direct queries to specialized agents (SQL and RAG) based on the query type. Those agents can then call back to the coordinator or themselves,for more complex queries if it's needed. Nothing fancy.
+This is my sandbox for experimenting with agent routing patterns. It uses a coordinator agent to direct queries to specialized agents (SQL and RAG) based on the query type. Those agents can then call back to the coordinator for more complex queries, or between one another if it's needed. Nothing fancy.
 
 ## Key Features
 
