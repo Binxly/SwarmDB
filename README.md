@@ -46,6 +46,10 @@ This is my sandbox for experimenting with agent routing patterns. It uses a coor
 - `config/`: Configuration and settings
 - `utils/`: Shared utilities
 
+- `data/databases`: SQL .db files go here
+- `data/documents`: Documents for RAG Agent go here
+- `data/vector_stores/chroma_db/`: ChromaDB vector store goes here
+
 ## Notes
 
 I don't really plan on turning this into something production-ready - I'm mainly using it to explore different routing patterns and agent interactions. Feel free to use it as a starting point for your own experiments or Swarm projects.
