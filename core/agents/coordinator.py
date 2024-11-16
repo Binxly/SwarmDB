@@ -47,7 +47,6 @@ class CoordinatorAgent(BaseSwarmAgent):
             logger.error(error_msg)
             return error_msg
             
-        # The actual routing is handled by the Swarm framework based on our instructions
         return self._agent(query)
 
 coordinator_agent = CoordinatorAgent()

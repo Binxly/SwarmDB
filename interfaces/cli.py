@@ -18,23 +18,18 @@ class SwarmCLI:
         self.client = Swarm()
         self.messages: List[dict] = []
         
-        # Initialize agents
         self.sql_agent = SQLAgent()
         self.rag_agent = RAGAgent()
         self.coordinator = CoordinatorAgent()
-        
-        # Set up agent relationships
         self.coordinator.set_transfer_functions(self.sql_agent, self.rag_agent)
         
     def print_message(self, message: dict) -> None:
-        """Print a single message with appropriate styling."""
         sender = message.get("sender", message.get("role", "unknown"))
         content = message.get("content", "")
         
         if not content:
             return
             
-        # Define styles for different senders
         styles = {
             "user": ("bold blue", "📝 User"),
             "Coordinator": ("bold yellow", "🎯 Coordinator"),
@@ -55,7 +50,6 @@ class SwarmCLI:
         self.console.print(panel)
         
     def print_conversation(self) -> None:
-        """Print the entire conversation history."""
         current_turn = []
         
         for message in self.messages:
@@ -65,28 +59,22 @@ class SwarmCLI:
             sender = message.get("sender", message.get("role", "unknown"))
             content = message.get("content", "")
             
-            # Start new turn on user message
             if sender == "user":
                 if current_turn:
-                    # Print previous turn with divider
                     self.console.print("─" * 80)
                     for turn_message in current_turn:
                         self.print_message(turn_message)
                     current_turn = []
-                
-                # Add user message to new turn    
                 current_turn.append({"sender": sender, "content": content})
             else:
                 current_turn.append({"sender": sender, "content": content})
         
-        # Print final turn
         if current_turn:
             self.console.print("─" * 80)
             for turn_message in current_turn:
                 self.print_message(turn_message)
                 
     def run(self) -> None:
-        """Run the CLI interface."""
         try:
             self.console.print("[bold magenta]Welcome to the Swarm CLI![/bold magenta]")
             self.console.print("[bold]Type 'quit' to exit[/bold]")
@@ -108,11 +96,10 @@ class SwarmCLI:
                 self.messages.append({"role": "user", "content": user_input})
                 
                 try:
-                    # Single status display with custom spinner
                     with self.console.status(
                         "[bold cyan]🤔 Processing your query...[/bold cyan]", 
                         spinner="dots12"
-                    ) as status:
+                    ):
                         response = self.client.run(agent=agent.agent, messages=self.messages)
                         self.messages = response.messages
                         agent = self._get_agent_from_response(response.agent)
@@ -130,12 +117,9 @@ class SwarmCLI:
             self.console.print(f"[bold red]Unexpected error:[/bold red] {str(e)}")
             
     def _get_agent_from_response(self, agent) -> BaseSwarmAgent:
-        """Map the swarm agent to our agent instances."""
-        # If we received None, return the coordinator
         if agent is None:
             return self.coordinator
         
-        # If we received a class type, instantiate it
         if isinstance(agent, type) and issubclass(agent, BaseSwarmAgent):
             if agent.__name__ == "SQLAgent":
                 return self.sql_agent
@@ -143,11 +127,9 @@ class SwarmCLI:
                 return self.rag_agent
             return self.coordinator
         
-        # If we received a BaseSwarmAgent instance, return it directly
         if isinstance(agent, BaseSwarmAgent):
             return agent
-        
-        # If we received a raw Agent, get its name and map to our instances
+            
         agent_name = getattr(agent, 'name', None)
         if agent_name:
             name_map = {
@@ -156,6 +138,5 @@ class SwarmCLI:
                 "RAG Agent": self.rag_agent
             }
             return name_map.get(agent_name, self.coordinator)
-        
-        # Default fallback
+            
         return self.coordinator
