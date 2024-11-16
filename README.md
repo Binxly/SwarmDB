@@ -1,4 +1,4 @@
-# Swarm Testing Platform
+# SwarmDB Testing Platform
 
 A lightweight platform for prototyping and testing swarm-based routing between specialized agents. Built with Python and the OpenAI Swarm library.
 
