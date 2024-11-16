@@ -8,7 +8,11 @@ def get_logger(name: Optional[str] = None) -> logging.Logger:
     logger = logging.getLogger(name or __name__)
     
     if not logger.handlers:
-        handler = logging.StreamHandler(sys.stdout)
+        if settings.log_to_console:
+            handler = logging.StreamHandler(sys.stdout)
+        else:
+            handler = logging.StreamHandler(sys.stderr)
+        
         handler.setFormatter(logging.Formatter(settings.log_format))
         logger.addHandler(handler)
         

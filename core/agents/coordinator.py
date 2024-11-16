@@ -13,10 +13,10 @@ class CoordinatorAgent(BaseSwarmAgent):
             name="Coordinator",
             instructions=(
                 "Route queries to the appropriate specialized agent:\n"
-                "- For questions about the Chinook database, sales data, albums, "
-                "artists, or any database queries, ALWAYS transfer to SQL Agent\n"
                 "- For questions about transformer architectures, LLMs, or related research, "
                 "transfer to RAG Agent\n"
+                "- For questions about databases, sales data, albums, artists, or any SQL queries, "
+                "the RAG Agent will transfer them to SQL Agent\n"
                 "- For general questions or clarifications, provide a direct response\n"
                 "Always explain your routing decision to the user."
             ),

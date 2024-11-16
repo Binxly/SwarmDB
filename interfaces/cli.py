@@ -61,17 +61,25 @@ class SwarmCLI:
         for message in self.messages:
             if message.get("content") is None:
                 continue
-                
+            
             sender = message.get("sender", message.get("role", "unknown"))
+            content = message.get("content", "")
             
-            if sender == "user" and current_turn:
-                self.console.print("─" * 80)
-                for turn_message in current_turn:
-                    self.print_message(turn_message)
-                current_turn = []
-            
-            current_turn.append(message)
+            # Start new turn on user message
+            if sender == "user":
+                if current_turn:
+                    # Print previous turn with divider
+                    self.console.print("─" * 80)
+                    for turn_message in current_turn:
+                        self.print_message(turn_message)
+                    current_turn = []
+                
+                # Add user message to new turn    
+                current_turn.append({"sender": sender, "content": content})
+            else:
+                current_turn.append({"sender": sender, "content": content})
         
+        # Print final turn
         if current_turn:
             self.console.print("─" * 80)
             for turn_message in current_turn:
@@ -89,6 +97,7 @@ class SwarmCLI:
                 user_input = self.console.input("\n[bold blue]Enter your question:[/bold blue] ").strip()
                 
                 if user_input.lower() == "quit":
+                    self.console.print("\n[bold yellow]Gracefully shutting down...[/bold yellow]")
                     break
                     
                 if user_input.lower() == "clear":
@@ -99,7 +108,11 @@ class SwarmCLI:
                 self.messages.append({"role": "user", "content": user_input})
                 
                 try:
-                    with self.console.status("[bold green]Processing query...", spinner="dots"):
+                    # Single status display with custom spinner
+                    with self.console.status(
+                        "[bold cyan]🤔 Processing your query...[/bold cyan]", 
+                        spinner="dots12"
+                    ) as status:
                         response = self.client.run(agent=agent.agent, messages=self.messages)
                         self.messages = response.messages
                         agent = self._get_agent_from_response(response.agent)
@@ -146,3 +159,14 @@ class SwarmCLI:
         
         # Default fallback
         return self.coordinator
+
+    def _display_response(self, agent: BaseSwarmAgent, response: str) -> None:
+        """Display the agent's response in a formatted panel."""
+        # Get the correct agent name for the panel title
+        agent_name = agent.name if hasattr(agent, 'name') else "Agent"
+        
+        self.console.print(Panel(
+            Markdown(response),
+            title=f"📚 {agent_name}",
+            border_style="blue"
+        ))

@@ -24,13 +24,13 @@ class Settings(BaseSettings):
     chunk_size: int = 4000
     chunk_overlap: int = 500
     embedding_model: str = "all-MiniLM-L6-v2"
-    retriever_k: int = 5
+    retriever_k: int = 4
     
     # SQL Settings
     sql_top_k: int = 5
     
     # Logging Settings
-    log_format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    log_format: str = " %(name)s - %(message)s"
     log_level: str = "INFO"
     
     # Add these fields to your Settings class
@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     langchain_api_key: str = ""
     langchain_project: str = ""
     tokenizers_parallelism: bool = False
+    log_to_console: bool = False
+
+    def get_database_uri(self) -> str:
+        """Get the SQLite database URI."""
+        return f"sqlite:///{self.database_path}"
 
 # Create a global settings instance
 settings = Settings()

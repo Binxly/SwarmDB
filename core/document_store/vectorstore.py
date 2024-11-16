@@ -61,22 +61,40 @@ class VectorStoreHandler:
         """Convert a list of documents to a single string."""
         return "\n\n".join(doc.page_content for doc in docs)
 
-    def retrieve_and_generate(self, question: str) -> str:
-        """Retrieve relevant documents and generate an answer."""
+    def retrieve_and_generate(self, question: str) -> tuple[str, int, List[str]]:
         try:
             if self.retriever is None:
-                return "Error: Document retrieval system is not properly initialized."
+                return "Error: Document retrieval system is not properly initialized.", 0, []
             
-            template = """Answer the question based only on the following context:
+            # Get documents
+            docs = self.retriever.invoke(question)
+            num_docs = len(docs)
+            
+            # Improve snippet formatting
+            snippets = []
+            for doc in docs:
+                # Clean and format the content
+                content = doc.page_content.replace('\n', ' ').strip()
+                # Take first 200 chars and add ellipsis if needed
+                preview = content[:200] + ('...' if len(content) > 200 else '')
+                # Add to snippets list with better structure
+                snippets.append(preview)
+            
+            template = """Based on the provided context, please provide a clear and well-formatted answer to the question.
+            Use markdown formatting for better readability.
+            
+            Context:
             {context}
+            
             Question: {question}
-            Answer: """
+            
+            Answer (use markdown formatting): """
             
             prompt = ChatPromptTemplate.from_template(template)
             
             rag_chain = (
                 {
-                    "context": self.retriever | self._docs_to_string, 
+                    "context": lambda x: self._docs_to_string(docs), 
                     "question": RunnablePassthrough()
                 }
                 | prompt
@@ -84,9 +102,23 @@ class VectorStoreHandler:
                 | StrOutputParser()
             )
             
-            return rag_chain.invoke(question)
+            answer = rag_chain.invoke(question)
+            
+            # Format the final response with cleaner section breaks
+            formatted_answer = f"""
+{answer}
+
+---
+### Source Documents ({num_docs}):
+
+"""
+            # Add numbered snippets with cleaner formatting
+            for i, snippet in enumerate(snippets, 1):
+                formatted_answer += f"{i}. {snippet}\n\n"
+                
+            return formatted_answer.strip(), num_docs, snippets
             
         except Exception as e:
             error_msg = f"Error in retrieve_and_generate: {str(e)}"
             logger.error(error_msg)
-            return error_msg
+            return error_msg, 0, []

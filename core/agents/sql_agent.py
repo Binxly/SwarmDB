@@ -33,7 +33,13 @@ class SQLAgent(BaseSwarmAgent):
     def handle_query(self, query: str) -> Any:
         """Handle an incoming SQL query."""
         try:
-            return self.sql_handler.generate_response(query)
+            # For database-related questions, generate SQL response
+            if any(keyword in query.lower() for keyword in ["database", "sql", "albums", "tracks", "sales"]):
+                return self.sql_handler.generate_response(query)
+            # For non-database questions, redirect to coordinator
+            else:
+                logger.info("Redirecting non-SQL query to coordinator")
+                return None
         except Exception as e:
             logger.error(f"Error handling SQL query: {e}")
             return f"Error: {str(e)}"
