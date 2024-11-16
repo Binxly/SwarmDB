@@ -24,7 +24,9 @@ This is my sandbox for experimenting with agent routing patterns. It uses a coor
    ```
 
    2a. Install torch and swarm
+   
    For PyTorch, see: https://pytorch.org
+   
    For Swarm:
    ```bash
    pip install git+https://github.com/openai/swarm.git # swarm
@@ -35,7 +37,7 @@ This is my sandbox for experimenting with agent routing patterns. It uses a coor
    pip install -r requirements.txt
    ```
 
-3. Copy `.env.example` to `.env`, fill in your OpenAI API key, and optionally update the LangChain API key for tracing:
+4. Copy `.env.example` to `.env`, fill in your OpenAI API key, and optionally update the LangChain API key for tracing:
    ```
    OPENAI_API_KEY= <YOUR_KEY_HERE>
    LANGCHAIN_TRACING_V2=true
@@ -44,13 +46,13 @@ This is my sandbox for experimenting with agent routing patterns. It uses a coor
    TOKENIZERS_PARALLELISM=false
    ```
 
-4. Download the Chinook.db toy, and move it to `data/databases`:
+5. Download the Chinook.db toy, and move it to `data/databases`:
    ```
    wget https://github.com/lerocha/chinook-database/raw/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite
    mv Chinook_Sqlite.sqlite data/databases/Chinook.db
    ```
 
-5. Run the CLI:
+6. Run the CLI:
    ```bash
    python main.py
    ```
