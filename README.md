@@ -14,7 +14,7 @@ This is my sandbox for experimenting with agent routing patterns. It uses a coor
 - RAG Agent for document retrieval and analysis
 - TODO: Basic test coverage with pytest
 
-## Quick Start
+## Quick Start Demo
 
 1. Clone the repo
 2. Set up your environment:
@@ -33,7 +33,13 @@ This is my sandbox for experimenting with agent routing patterns. It uses a coor
    TOKENIZERS_PARALLELISM=false
    ```
 
-4. Run the CLI:
+4. Download the Chinook.db toy, and move it to `data/databases`:
+   ```
+   wget https://github.com/lerocha/chinook-database/raw/master/ChinookDatabase/DataSources/Chinook_Sqlite.sqlite
+   mv Chinook_Sqlite.sqlite data/databases/Chinook.db
+   ```
+
+5. Run the CLI:
    ```bash
    python main.py
    ```
