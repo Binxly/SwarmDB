@@ -21,6 +21,17 @@ This is my sandbox for experimenting with agent routing patterns. It uses a coor
    ```bash
    python -m venv venv
    source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+   ```
+
+   2a. Install torch and swarm
+   For PyTorch, see: https://pytorch.org
+   For Swarm:
+   ```bash
+   pip install git+https://github.com/openai/swarm.git # swarm
+   ```
+
+   2b. Install the rest of the dependencies:
+   ```bash
    pip install -r requirements.txt
    ```
 
